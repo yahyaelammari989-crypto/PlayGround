@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gravity Switcher 3D</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b1020'/%3E%3Cpath d='M32 9v46m0-46 12 12M32 9 20 21m12 34L20 43m12 12 12-12' fill='none' stroke='%2373f4e3' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<style>
+  :root { color-scheme: dark; --ink:#f4f4f1; --muted:#a1aab8; --cyan:#73f4e3; --panel:rgba(13,20,34,.78); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#0b1020; color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  canvas { display:block; }
+  #hud { position:fixed; inset:0; pointer-events:none; z-index:2; }
+  .topbar { position:absolute; top:22px; left:24px; display:flex; align-items:center; gap:12px; }
+  .brand { display:flex; align-items:center; gap:10px; padding:10px 14px; border:1px solid rgba(255,255,255,.13); border-radius:14px; background:var(--panel); backdrop-filter:blur(12px); }
+  .brand-mark { width:28px; height:28px; display:grid; place-items:center; border-radius:9px; color:#071719; background:var(--cyan); font-weight:900; }
+  .brand strong { display:block; font-size:12px; letter-spacing:.12em; text-transform:uppercase; }
+  .brand small { display:block; margin-top:2px; color:var(--muted); font-size:10px; letter-spacing:.08em; }
+  .stats { position:absolute; top:22px; right:22px; display:flex; gap:9px; align-items:stretch; }
+  .stat { min-width:134px; padding:11px 14px; border:1px solid rgba(255,255,255,.13); border-radius:13px; background:var(--panel); backdrop-filter:blur(12px); }
+  .label { color:var(--muted); font-size:9px; letter-spacing:.16em; text-transform:uppercase; }
+  .value { display:flex; align-items:center; gap:8px; margin-top:5px; font-size:13px; font-weight:650; }
+  #gemCount { color:var(--cyan); }
+  .gem-icon { width:11px; height:11px; transform:rotate(45deg); background:var(--cyan); box-shadow:0 0 12px #73f4e388; }
+  #gravityIcon { color:var(--cyan); font-size:17px; }
+  button { pointer-events:auto; border:1px solid rgba(255,255,255,.18); color:var(--ink); background:rgba(13,20,34,.82); border-radius:11px; padding:10px 13px; font:600 11px inherit; cursor:pointer; transition:.2s ease; }
+  button:hover { border-color:var(--cyan); color:var(--cyan); transform:translateY(-1px); }
+  #restart { height:100%; }
+  .center-hint { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:24px; height:24px; opacity:.72; }
+  .center-hint:before,.center-hint:after { content:""; position:absolute; background:#effffb; border-radius:2px; box-shadow:0 0 8px #73f4e3aa; }
+  .center-hint:before { width:2px; height:14px; left:11px; top:5px; }
+  .center-hint:after { width:14px; height:2px; left:5px; top:11px; }
+  .bottom-left { position:absolute; bottom:22px; left:24px; display:flex; align-items:end; gap:12px; }
+  .gravity-tip,.message { padding:11px 14px; border:1px solid rgba(255,255,255,.12); border-radius:12px; background:var(--panel); backdrop-filter:blur(12px); font-size:11px; color:#d5dce7; }
+  .gravity-tip b { color:var(--cyan); }
+  .message { color:var(--cyan); display:none; max-width:320px; }
+  .controls { position:absolute; bottom:22px; right:22px; color:#aab4c3; font-size:10px; letter-spacing:.04em; text-align:right; line-height:1.9; text-shadow:0 1px 5px #000; }
+  kbd { display:inline-block; min-width:19px; padding:1px 5px; margin:0 1px; border:1px solid #ffffff36; border-radius:5px; color:#fff; background:#10192a; font:600 10px ui-monospace,monospace; text-align:center; }
+  #intro { position:fixed; inset:0; z-index:5; display:grid; place-items:center; background:radial-gradient(ellipse at 50% 45%,rgba(27,48,72,.25),rgba(4,8,17,.74)); }
+  .card { width:min(440px,calc(100vw - 32px)); padding:30px; border:1px solid rgba(255,255,255,.16); border-radius:22px; background:rgba(9,15,28,.9); box-shadow:0 24px 80px #0008; text-align:center; backdrop-filter:blur(18px); }
+  .eyebrow { color:var(--cyan); font-size:10px; font-weight:700; letter-spacing:.23em; text-transform:uppercase; }
+  h1 { margin:10px 0 9px; font-size:clamp(28px,6vw,42px); line-height:1; letter-spacing:-.055em; }
+  .card p { margin:0 auto 21px; max-width:340px; color:#aeb8c7; font-size:13px; line-height:1.65; }
+  #play { padding:13px 23px; border:0; color:#071719; background:var(--cyan); font-size:12px; }
+  #play:hover { color:#071719; background:#a1fff1; }
+  .mini-controls { margin-top:18px; color:#8591a2; font-size:10px; }
+  #win { display:none; position:fixed; inset:0; z-index:4; place-items:center; background:rgba(4,8,17,.58); pointer-events:auto; }
+  #win .card { pointer-events:auto; }
+  @media(max-width:650px) { .topbar{top:12px;left:12px}.stats{top:74px;left:12px;right:auto}.stat{min-width:110px;padding:8px 10px}.bottom-left{left:12px;bottom:12px}.controls{right:12px;bottom:12px}.brand{padding:8px 10px}.controls{max-width:145px} }
+</style>
+</head>
+<body>
+<div id="hud">
+  <div class="topbar"><div class="brand"><div class="brand-mark">↕</div><div><strong>Gravity Switcher</strong><small>FIELD TEST 01 · ORBITAL VAULT</small></div></div></div>
+  <div class="stats">
+    <div class="stat"><div class="label">Energy shards</div><div class="value"><span class="gem-icon"></span><span id="gemCount">0 / 3</span></div></div>
+    <div class="stat"><div class="label">Gravity vector</div><div class="value"><span id="gravityIcon">↓</span><span id="gravityText">Floor</span></div></div>
+    <button id="restart" type="button">↻ &nbsp;Restart</button>
+  </div>
+  <div class="center-hint"></div>
+  <div class="bottom-left"><div class="gravity-tip">Aim at a surface and press <b>G</b> or <b>Space</b> to shift gravity.</div><div class="message" id="message"></div></div>
+  <div class="controls"><div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · Mouse look</div><div><kbd>G</kbd> / <kbd>Space</kbd> shift · <kbd>Shift</kbd> hop</div><div><kbd>Esc</kbd> release cursor</div></div>
+</div>
+<div id="intro"><div class="card"><div class="eyebrow">A low-gravity puzzle run</div><h1>Gravity<br>Switcher 3D</h1><p>Defy the fall. Rotate your world, collect all three energy shards, and reach the exit portal.</p><button id="play" type="button">ENTER THE VAULT&nbsp; →</button><div class="mini-controls">WASD to move · mouse to look · G / Space to switch gravity</div></div></div>
+<div id="win"><div class="card"><div class="eyebrow">Vault unlocked</div><h1>Run complete.</h1><p>You collected every shard and found your way through the orbital vault.</p><button id="again" type="button">PLAY AGAIN</button></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+// Scene and renderer
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b1020);
+scene.fog = new THREE.Fog(0x0b1020, 24, 58);
+const camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, 0.1, 100);
+camera.position.set(0, 7, 20);
+camera.lookAt(0, 7, 0);
+const renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+document.body.appendChild(renderer.domElement);
+
+const hemi = new THREE.HemisphereLight(0xb8e6ff, 0x182137, 1.45); scene.add(hemi);
+const keyLight = new THREE.DirectionalLight(0xffefd4, 3.0); keyLight.position.set(-7, 17, 8); keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(1024,1024); keyLight.shadow.camera.left=-22; keyLight.shadow.camera.right=22; keyLight.shadow.camera.top=24; keyLight.shadow.camera.bottom=-20; keyLight.shadow.bias=-0.0005; scene.add(keyLight);
+const cyanLight = new THREE.PointLight(0x4fe8df, 30, 18); cyanLight.position.set(1,8,0); scene.add(cyanLight);
+const pinkLight = new THREE.PointLight(0xff397a, 18, 12); pinkLight.position.set(-8,7,-4); scene.add(pinkLight);
+
+const colliders = [];
+const surfaces = [];
+const tempV = new THREE.Vector3();
+const worldUp = new THREE.Vector3(0,1,0);
+function mat(color, roughness=.72, metalness=.08, extra={}) { return new THREE.MeshStandardMaterial({ color, roughness, metalness, side:THREE.DoubleSide, ...extra }); }
+const materials = {
+  floor:mat(0x29354a), wall:mat(0x202c42), trim:mat(0x4f6682,.45,.25), teal:mat(0x1f9f9b,.48,.12), violet:mat(0x6552b5,.5,.1), amber:mat(0xd38b3b,.5,.14), dark:mat(0x111a2b,.85),
+  glow:mat(0x74f4e3,.25,.25,{emissive:0x1f9f96,emissiveIntensity:1.2}),
+  laser:mat(0xff355e,.25,.2,{emissive:0xff173f,emissiveIntensity:2})
+};
+function box(name, pos, size, material, {collide=true, shadow=true, surface=false}={}) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+  mesh.name=name; mesh.position.set(...pos); mesh.castShadow=shadow; mesh.receiveShadow=true; scene.add(mesh);
+  if(collide) colliders.push(mesh);
+  if(surface) surfaces.push(mesh);
+  return mesh;
+}
+function addEdge(mesh, color=0x7892ad, opacity=.2) {
+  const edges=new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry),new THREE.LineBasicMaterial({color,transparent:true,opacity}));
+  edges.position.copy(mesh.position); edges.quaternion.copy(mesh.quaternion); scene.add(edges); return edges;
+}
+
+// A compact orbital vault: the room itself is walkable on floor, walls, and ceiling.
+box('Vault floor',[0,-.55,0],[26,1,20],materials.floor,{surface:true});
+box('Vault ceiling',[0,16.55,0],[26,1,20],materials.wall,{surface:true});
+box('West wall',[-13,8,0],[1,17,20],materials.wall,{surface:true});
+box('East wall',[13,8,0],[1,17,20],materials.wall,{surface:true});
+box('North wall',[0,8,-10],[26,17,1],materials.wall,{surface:true});
+box('South wall',[0,8,10],[26,17,1],materials.wall,{surface:true});
+
+// Raised stepping islands add depth and give the player landmarks on each gravity plane.
+const islandA=box('Floor island A',[-5,.18,0],[4,.36,3],materials.teal,{surface:true}); addEdge(islandA,0x71fff2,.45);
+const islandB=box('Floor island B',[1,.3,-3],[3,.6,3],materials.violet,{surface:true}); addEdge(islandB,0xb7a9ff,.4);
+const islandC=box('Floor island C',[7,.2,3],[3,.4,4],materials.amber,{surface:true}); addEdge(islandC,0xffcf78,.38);
+// Colored landing strips mounted to the east wall and the vault ceiling.
+const wallPad1=box('East wall pad',[12.38,6.1,-3],[.24,2.4,4.2],materials.teal,{surface:true}); addEdge(wallPad1,0x71fff2,.55);
+const wallPad2=box('East wall pad upper',[12.38,11.3,2],[.24,3.4,4.5],materials.violet,{surface:true}); addEdge(wallPad2,0xb7a9ff,.5);
+const ceilingPad=box('Ceiling pad',[-1,15.95,0],[5,.2,5],materials.amber,{surface:true}); addEdge(ceilingPad,0xffcf78,.5);
+
+// Luminous architectural ribs and navigation strips.
+for(let x=-10;x<=10;x+=5) {
+  const rib=box('Floor inlay',[x,.0,0],[.035,.035,17],materials.trim,{collide:false,shadow:false});
+}
+for(let z=-8;z<=8;z+=4) {
+  box('Floor crossline',[0,.006,z],[23,.025,.035],materials.trim,{collide:false,shadow:false});
+}
+for(const x of [-12.44,12.44]) {
+  for(const z of [-8,8]) {
+    const pillar=box('Corner light',[x,8,z],[.12,15,.12],materials.glow,{collide:false,shadow:false});
+  }
+}
+// Floating navigation chevrons, modeled as simple emissive bars.
+function bar(pos,scale,rotation=0,color=materials.glow) { const m=new THREE.Mesh(new THREE.BoxGeometry(...scale),color); m.position.set(...pos); m.rotation.y=rotation; m.castShadow=false; scene.add(m); return m; }
+for(let i=0;i<5;i++) { bar([-8+i*4,.04,-8],[.8,.06,.12],i%2?.35:-.35); }
+
+// Hazard line: a clearly visible laser crossing the central floor route.
+const laser=box('Laser beam',[-1,1.05,2],[.08,1.9,8],materials.laser,{collide:false,shadow:false});
+const laserGlow=new THREE.PointLight(0xff174f,8,6); laserGlow.position.set(-1,1.1,2); scene.add(laserGlow);
+const laserPosts=[];
+for(const z of [-2,6]) {
+  const post=box('Laser emitter',[-1,.3,z],[.5,.6,.5],materials.dark,{collide:false});
+  const cap=box('Emitter cap',[-1,.68,z],[.24,.15,.24],materials.laser,{collide:false,shadow:false});
+  laserPosts.push(post);
+}
+
+// Shards are low-poly octahedra with a small ring of light.
+const shards=[];
+function makeShard(name,position,color) {
+  const group=new THREE.Group(); group.name=name; group.position.set(...position); scene.add(group);
+  const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.42,0),new THREE.MeshStandardMaterial({color,roughness:.22,metalness:.2,emissive:color,emissiveIntensity:.75}));
+  crystal.rotation.set(.15,.25,.2); crystal.castShadow=true; group.add(crystal);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.61,.025,5,28),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75})); ring.rotation.x=Math.PI/2; group.add(ring);
+  const light=new THREE.PointLight(color,4,4); group.add(light);
+  shards.push({group,crystal,collected:false,home:group.position.clone()});
+}
+makeShard('Shard / floor',[-5,1.5,0],0x68f7dc);
+makeShard('Shard / wall',[11.2,8.2,-3],0xc09aff);
+makeShard('Shard / ceiling',[-1,14.7,0],0xffca72);
+
+// Exit portal on the far end of the floor, energized when all shards are found.
+const portal=new THREE.Group(); portal.position.set(9,.08,5.2); scene.add(portal);
+const portalRing=new THREE.Mesh(new THREE.TorusGeometry(1.12,.13,8,32),new THREE.MeshStandardMaterial({color:0x527186,metalness:.55,roughness:.3,emissive:0x10232b,emissiveIntensity:.7}));
+portalRing.position.y=1.15; portal.add(portalRing);
+const portalCore=new THREE.Mesh(new THREE.CircleGeometry(.96,24),new THREE.MeshBasicMaterial({color:0x15313b,transparent:true,opacity:.7,side:THREE.DoubleSide})); portalCore.position.set(0,1.15,.03); portal.add(portalCore);
+const portalLight=new THREE.PointLight(0x43d3c7,2,7); portalLight.position.y=1.2; portal.add(portalLight);
+for(let i=0;i<4;i++){const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.12),materials.glow); gem.position.set(Math.cos(i*Math.PI/2)*1.42,1.15+Math.sin(i*Math.PI/2)*1.42,0); portal.add(gem);}
+
+// Player setup
+const player = new THREE.Group();
+const playerBody = new THREE.Mesh(
+  new THREE.BoxGeometry(0.8, 1.2, 0.8),
+  new THREE.MeshStandardMaterial({ color: 0xbceff8, roughness: 0.5, metalness: 0.15, emissive: 0x123d4a, emissiveIntensity: 0.4 })
+);
+playerBody.castShadow = true;
+playerBody.receiveShadow = true;
+player.add(playerBody);
+player.position.set(0, 1.85, 0);
+scene.add(player);
+
+const spawnPoint = new THREE.Vector3(0, 2.2, 0);
+const gravityDir = new THREE.Vector3(0, -1, 0);
+const playerVelocity = new THREE.Vector3();
+const moveState = { forward: 0, right: 0 };
+const look = { yaw: 0, pitch: 0 };
+const playerRadius = 0.48;
+const playerHalf = new THREE.Vector3(0.4, 0.6, 0.4);
+let started = false;
+let collected = 0;
+let paused = false;
+
+const gemCountEl = document.getElementById('gemCount');
+const gravityTextEl = document.getElementById('gravityText');
+const gravityIconEl = document.getElementById('gravityIcon');
+const messageEl = document.getElementById('message');
+const intro = document.getElementById('intro');
+const winScreen = document.getElementById('win');
+const restartBtn = document.getElementById('restart');
+const playBtn = document.getElementById('play');
+const againBtn = document.getElementById('again');
+const keys = {};
+
+function setMessage(text) {
+  messageEl.textContent = text;
+  messageEl.style.display = 'block';
+  clearTimeout(setMessage._timer);
+  setMessage._timer = setTimeout(() => { messageEl.style.display = 'none'; }, 1600);
+}
+
+function getGravityName(direction) {
+  const d = direction.clone().normalize();
+  if (Math.abs(d.y) > 0.8) return d.y > 0 ? 'Ceiling' : 'Floor';
+  if (Math.abs(d.x) > Math.abs(d.z)) return d.x > 0 ? 'East wall' : 'West wall';
+  return d.z > 0 ? 'South wall' : 'North wall';
+}
+
+function getGravityIcon(direction) {
+  const d = direction.clone().normalize();
+  if (Math.abs(d.y) > 0.8) return d.y > 0 ? '↑' : '↓';
+  if (Math.abs(d.x) > Math.abs(d.z)) return d.x > 0 ? '→' : '←';
+  return d.z > 0 ? '↓' : '↑';
+}
+
+function refreshGravityHud() {
+  gravityTextEl.textContent = getGravityName(gravityDir);
+  gravityIconEl.textContent = getGravityIcon(gravityDir);
+}
+
+function refreshGemHud() {
+  gemCountEl.textContent = `${collected} / ${shards.length}`;
+}
+
+function resetPlayer() {
+  player.position.copy(spawnPoint);
+  playerVelocity.set(0, 0, 0);
+  gravityDir.set(0, -1, 0);
+  look.yaw = 0;
+  look.pitch = 0;
+  refreshGravityHud();
+}
+
+function resetLevel() {
+  for (const shard of shards) {
+    shard.collected = false;
+    shard.group.visible = true;
+    shard.group.position.copy(shard.home);
+  }
+  collected = 0;
+  refreshGemHud();
+  resetPlayer();
+  winScreen.style.display = 'none';
+  setMessage('Vault reset.');
+}
+
+function attemptGravitySwitch() {
+  if (!started || paused) return;
+
+  const raycaster = new THREE.Raycaster();
+  raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+  raycaster.far = 14;
+  const hits = raycaster.intersectObjects(surfaces, false);
+  const current = gravityDir.clone().normalize();
+
+  let next = current.clone().multiplyScalar(-1);
+  if (hits.length && hits[0].face) {
+    // Gravity pulls into the surface, opposite its outward-facing normal.
+    const normalMatrix = new THREE.Matrix3().getNormalMatrix(hits[0].object.matrixWorld);
+    const surfaceNormal = hits[0].face.normal.clone().applyMatrix3(normalMatrix).normalize();
+    next.copy(surfaceNormal).negate();
+  }
+
+  if (next.lengthSq() < 0.0001 || next.dot(current) > 0.92) next = current.clone().multiplyScalar(-1);
+
+  gravityDir.copy(next.normalize());
+  refreshGravityHud();
+  setMessage(`Gravity: ${getGravityName(gravityDir)}`);
+}
+
+function resolveSphereCollisions(position, radius, gravity = new THREE.Vector3(0, -1, 0)) {
+  let supported = false;
+  const up = gravity.clone().negate().normalize();
+  for (const obj of colliders) {
+    const center = obj.getWorldPosition(new THREE.Vector3());
+    const half = obj.userData.half || new THREE.Vector3(0.5, 0.5, 0.5);
+    const diff = position.clone().sub(center);
+    const extentX = playerRadius;
+    const extentY = Math.max(playerRadius, playerHalf.y);
+    const extentZ = playerRadius;
+    const overlapX = half.x + extentX - Math.abs(diff.x);
+    const overlapY = half.y + extentY - Math.abs(diff.y);
+    const overlapZ = half.z + extentZ - Math.abs(diff.z);
+
+    if (overlapX > 0 && overlapY > 0 && overlapZ > 0) {
+      const axis = [
+        { name: 'x', value: overlapX, sign: diff.x >= 0 ? 1 : -1 },
+        { name: 'y', value: overlapY, sign: diff.y >= 0 ? 1 : -1 },
+        { name: 'z', value: overlapZ, sign: diff.z >= 0 ? 1 : -1 }
+      ].sort((a, b) => a.value - b.value)[0];
+
+      const pushNormal = new THREE.Vector3(axis.name === 'x' ? axis.sign : 0, axis.name === 'y' ? axis.sign : 0, axis.name === 'z' ? axis.sign : 0);
+      if (pushNormal.dot(up) > 0.55) supported = true;
+      if (axis.name === 'x') {
+        position.x += axis.sign * (overlapX + 0.01);
+      } else if (axis.name === 'y') {
+        position.y += axis.sign * (overlapY + 0.01);
+      } else {
+        position.z += axis.sign * (overlapZ + 0.01);
+      }
+    }
+  }
+  return supported;
+}
+
+let grounded = false;
+function updatePlayer(dt) {
+  const gravity = gravityDir.clone().normalize();
+  const up = gravity.clone().negate();
+  const forwardWorld = new THREE.Vector3(Math.sin(look.yaw), 0, Math.cos(look.yaw));
+  const rightWorld = new THREE.Vector3(forwardWorld.z, 0, -forwardWorld.x);
+  let planeForward = forwardWorld.clone().projectOnPlane(gravity);
+  if (planeForward.lengthSq() < 0.01) planeForward = rightWorld.clone().projectOnPlane(gravity);
+  planeForward.normalize();
+  const planeRight = new THREE.Vector3().crossVectors(up, planeForward).normalize();
+  const moveVector = new THREE.Vector3();
+
+  if (moveState.forward !== 0) moveVector.addScaledVector(planeForward, moveState.forward);
+  if (moveState.right !== 0) moveVector.addScaledVector(planeRight, moveState.right);
+
+  if (moveVector.lengthSq() > 0) {
+    moveVector.normalize().multiplyScalar(3.8 * dt);
+    player.position.add(moveVector);
+  }
+
+  playerVelocity.addScaledVector(gravity, 18 * dt);
+  if (playerVelocity.length() > 18) playerVelocity.setLength(18);
+  player.position.addScaledVector(playerVelocity, dt);
+  grounded = resolveSphereCollisions(player.position, playerRadius, gravity);
+  if (grounded && playerVelocity.dot(gravity) > 0) playerVelocity.set(0, 0, 0);
+
+  if (player.position.y < -16 || player.position.y > 32 || Math.abs(player.position.x) > 28 || Math.abs(player.position.z) > 24) {
+    setMessage('You fell out of the vault.');
+    resetPlayer();
+  }
+
+  const laserCenter = laser.getWorldPosition(new THREE.Vector3());
+  const laserHalf = laser.userData.half || new THREE.Vector3(0.1, 0.95, 4);
+  const laserDiff = player.position.clone().sub(laserCenter);
+  if (Math.abs(laserDiff.x) <= laserHalf.x + playerRadius && Math.abs(laserDiff.y) <= laserHalf.y + playerRadius && Math.abs(laserDiff.z) <= laserHalf.z + playerRadius) {
+    setMessage('Laser hit!');
+    resetPlayer();
+  }
+
+  for (const shard of shards) {
+    if (shard.collected) continue;
+    const dist = player.position.distanceTo(shard.group.position);
+    if (dist < 1.15) {
+      shard.collected = true;
+      shard.group.visible = false;
+      collected += 1;
+      refreshGemHud();
+      setMessage('Shard recovered!');
+      if (collected >= shards.length) {
+        setMessage('Portal activated!');
+      }
+    }
+  }
+
+  const portalActive = collected >= shards.length;
+  portalRing.material.emissive.setHex(portalActive ? 0x0ea39f : 0x10232b);
+  portalRing.material.color.setHex(portalActive ? 0x87f4ed : 0x527186);
+  portalLight.intensity = portalActive ? 7.5 : 2.2;
+  portalCore.material.opacity = portalActive ? 0.95 : 0.45;
+  portalCore.material.color.setHex(portalActive ? 0x41d3d1 : 0x15313b);
+
+  if (portalActive && player.position.distanceTo(portal.position) < 1.5) {
+    winScreen.style.display = 'grid';
+    paused = true;
+    document.exitPointerLock();
+  }
+}
+
+const cameraUp = new THREE.Vector3(0, 1, 0);
+function updateCamera(dt) {
+  const up = gravityDir.clone().normalize().negate();
+  const alpha = 1 - Math.exp(-5 * dt);
+  cameraUp.lerp(up, alpha).normalize();
+  const yawForward = new THREE.Vector3(Math.sin(look.yaw), 0, Math.cos(look.yaw));
+  let flatForward = yawForward.clone().projectOnPlane(gravityDir);
+  if (flatForward.lengthSq() < 0.01) flatForward.set(1, 0, 0).projectOnPlane(gravityDir);
+  if (flatForward.lengthSq() < 0.01) flatForward.set(0, 0, 1).projectOnPlane(gravityDir);
+  flatForward.normalize();
+  const viewDirection = flatForward.clone().multiplyScalar(Math.cos(look.pitch))
+    .addScaledVector(cameraUp, Math.sin(look.pitch)).normalize();
+  const focus = player.position.clone().addScaledVector(up, 0.45);
+  const desiredPos = focus.clone().addScaledVector(up, 0.9).addScaledVector(flatForward, -3.4);
+  camera.position.lerp(desiredPos, alpha);
+  camera.up.copy(cameraUp);
+  camera.lookAt(focus.clone().addScaledVector(viewDirection, 4));
+}
+
+const clock = new THREE.Clock();
+
+function tick() {
+  const dt = Math.min(clock.getDelta(), 0.033);
+
+  if (started && !paused) {
+    updatePlayer(dt);
+    updateCamera(dt);
+    for (const shard of shards) {
+      if (!shard.collected) shard.crystal.rotation.y += dt * 1.4;
+    }
+  }
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+
+window.addEventListener('keydown', (event) => {
+  const code = event.code;
+  keys[code] = true;
+
+  if ((code === 'KeyG' || code === 'Space') && !event.repeat) {
+    event.preventDefault();
+    attemptGravitySwitch();
+  }
+
+  if (code === 'ShiftLeft' || code === 'ShiftRight') {
+    if (started && grounded && !paused) {
+      playerVelocity.copy(gravityDir).negate().multiplyScalar(7.2);
+      grounded = false;
+    }
+  }
+
+  if (code === 'KeyR' && !event.repeat) {
+    resetLevel();
+  }
+
+  if (code === 'KeyZ') {
+    setMessage('Gravity: ' + getGravityName(gravityDir));
+  }
+});
+
+window.addEventListener('keyup', (event) => {
+  keys[event.code] = false;
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+window.addEventListener('mousemove', (event) => {
+  if (!started || document.pointerLockElement !== renderer.domElement) return;
+  look.yaw -= event.movementX * 0.0022;
+  look.pitch -= event.movementY * 0.0018;
+  look.pitch = THREE.MathUtils.clamp(look.pitch, -1.2, 1.2);
+});
+
+function updateInputState() {
+  moveState.forward = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  moveState.right = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+}
+
+window.addEventListener('keydown', updateInputState);
+window.addEventListener('keyup', updateInputState);
+
+playBtn.addEventListener('click', () => {
+  intro.style.display = 'none';
+  started = true;
+  paused = false;
+  renderer.domElement.requestPointerLock();
+  setMessage('Vault online.');
+});
+
+againBtn.addEventListener('click', () => {
+  winScreen.style.display = 'none';
+  paused = false;
+  resetLevel();
+  started = true;
+  renderer.domElement.requestPointerLock();
+});
+
+restartBtn.addEventListener('click', () => {
+  resetLevel();
+  started = true;
+  paused = false;
+  renderer.domElement.requestPointerLock();
+});
+
+renderer.domElement.addEventListener('click', () => {
+  if (started && !paused && document.pointerLockElement !== renderer.domElement) {
+    renderer.domElement.requestPointerLock();
+  }
+});
+
+document.addEventListener('pointerlockchange', () => {
+  if (document.pointerLockElement !== renderer.domElement) {
+    if (started && !paused) setMessage('Pointer released. Click the scene to continue.');
+  }
+});
+
+// Initialize all box half extents
+for (const mesh of colliders) {
+  if (!mesh.userData.half) {
+    const size = mesh.geometry.parameters;
+    mesh.userData.half = new THREE.Vector3(
+      (size.width || size.radius * 2 || 1) / 2,
+      (size.height || size.depth || 1) / 2,
+      (size.depth || size.width || 1) / 2
+    );
+  }
+}
+
+refreshGravityHud();
+refreshGemHud();
+setMessage('Awaiting entry.');
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
+
