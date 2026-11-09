@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#10162f">
+<title>صيّاد النجوم — لعبة التقاط وبقاء</title>
+<style>
+:root{color-scheme:dark;--ink:#f7f5ff;--muted:#a6afd0;--gold:#ffd76b;--panel:rgba(22,29,60,.78);--line:rgba(255,255,255,.12)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#10162f;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none}body{display:grid;place-items:center;background:radial-gradient(ellipse at 50% 10%,#293565 0%,#171d3b 42%,#0d132a 100%)}
+.game-shell{position:relative;width:min(100vw,1120px);height:min(100dvh,820px);min-height:420px;overflow:hidden;border:1px solid rgba(255,255,255,.13);border-radius:26px;background:#151c3c;box-shadow:0 28px 90px #070b1bb0;isolation:isolate}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;z-index:2;inset:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(14px,3vw,26px);pointer-events:none;direction:ltr}
+.brand{direction:rtl;display:flex;align-items:center;gap:11px}.brand-icon{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#ffe890,#ffb733);box-shadow:0 6px 24px #ffcd5445;color:#2d2452;font-size:23px}.brand-copy strong{display:block;font-size:15px;letter-spacing:.01em}.brand-copy span{display:block;color:var(--muted);font-size:11px;margin-top:1px}
+.stats{display:flex;gap:10px;direction:rtl}.stat{min-width:76px;padding:8px 13px;border:1px solid var(--line);border-radius:15px;background:rgba(16,23,51,.7);backdrop-filter:blur(10px);text-align:center}.stat label{display:block;font-size:10px;color:var(--muted);margin-bottom:1px}.stat strong{font-size:19px;line-height:1}.lives{font-size:17px!important;letter-spacing:2px;color:#ff7391}
+.badge{position:absolute;z-index:2;top:88px;left:50%;transform:translateX(-50%);white-space:nowrap;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;background:#10173599;padding:7px 13px;color:#c9d2f3;font-size:11px;backdrop-filter:blur(10px);direction:rtl}.dot{width:7px;height:7px;border-radius:50%;background:#83e5bb;box-shadow:0 0 12px #83e5bb}
+.sound{position:absolute;z-index:3;top:24px;left:24px;width:40px;height:40px;border-radius:13px;border:1px solid var(--line);color:white;background:#101735a8;font-size:17px;cursor:pointer;pointer-events:auto}
+.overlay{position:absolute;z-index:4;inset:0;display:grid;place-items:center;padding:22px;background:rgba(9,13,31,.38);backdrop-filter:blur(5px);transition:opacity .25s,visibility .25s}.overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}.card{width:min(100%,390px);padding:30px 28px 26px;text-align:center;border-radius:26px;border:1px solid rgba(255,255,255,.15);background:linear-gradient(150deg,rgba(35,45,88,.97),rgba(21,27,57,.97));box-shadow:0 24px 70px #080c22aa;direction:rtl}.hero-emoji{width:72px;height:72px;margin:0 auto 15px;display:grid;place-items:center;border-radius:24px;background:linear-gradient(145deg,#fff1ad,#ffbc48);font-size:39px;box-shadow:0 10px 30px #ffc44b45}.eyebrow{font-size:11px;letter-spacing:.13em;color:#aab8f3;margin:0 0 7px}.card h1{font-size:30px;line-height:1.2;margin:0 0 11px}.card p{color:#b9c3e3;font-size:14px;line-height:1.8;margin:0 auto 20px;max-width:310px}.rules{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 0 22px}.rule{padding:7px 10px;border-radius:10px;background:#ffffff0b;border:1px solid #ffffff12;color:#d9def3;font-size:11px}.rule b{font-size:14px;margin-left:4px}.play{width:100%;height:51px;border:0;border-radius:15px;background:linear-gradient(100deg,#ffe17b,#ffb947);color:#32234a;font-weight:800;font-size:16px;box-shadow:0 8px 25px #ffca5140;cursor:pointer;transition:transform .15s,filter .15s}.play:active{transform:scale(.98);filter:brightness(.95)}.hint{color:#98a4cc!important;font-size:11px!important;margin:13px 0 0!important}
+.mobile-controls{position:absolute;z-index:3;bottom:max(15px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;gap:14px;direction:ltr;opacity:.72;pointer-events:none}.mobile-controls span{width:46px;height:46px;border:1px solid #ffffff30;border-radius:16px;background:#121a3b9c;display:grid;place-items:center;font-size:19px;color:#eef2ff;box-shadow:0 4px 16px #06091b66}
+.toast{position:absolute;z-index:2;top:137px;left:50%;transform:translate(-50%,-8px);font-size:13px;font-weight:700;color:#fff4bb;text-shadow:0 2px 10px #000;opacity:0;transition:.3s;pointer-events:none}.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:600px){.game-shell{width:100vw;height:100dvh;min-height:0;border:0;border-radius:0}.hud{padding:calc(12px + env(safe-area-inset-top)) 14px 0}.brand{gap:8px}.brand-icon{width:37px;height:37px;border-radius:12px;font-size:20px}.brand-copy strong{font-size:13px}.brand-copy span{font-size:10px}.stats{gap:6px}.stat{min-width:60px;padding:7px 9px;border-radius:13px}.stat strong{font-size:17px}.lives{font-size:15px!important}.sound{top:auto;bottom:max(17px,env(safe-area-inset-bottom));left:15px}.badge{top:78px;font-size:10px}.card{padding:25px 22px 22px}.card h1{font-size:27px}.hero-emoji{width:63px;height:63px;font-size:34px}.mobile-controls{bottom:max(17px,env(safe-area-inset-bottom))}}
+@media(max-height:520px) and (orientation:landscape){.game-shell{height:100dvh;border-radius:0}.hud{padding:10px 16px}.badge{top:62px}.card{padding:16px 22px}.hero-emoji{width:48px;height:48px;font-size:28px;margin-bottom:8px}.card h1{font-size:24px}.card p{margin-bottom:10px}.rules{margin-bottom:12px}.sound{top:auto;bottom:15px}.mobile-controls{bottom:12px}}
+</style>
+</head>
+<body>
+<main class="game-shell" aria-label="لعبة صياد النجوم">
+<canvas id="game" aria-label="ساحة اللعب"></canvas>
+<header class="hud">
+  <div class="brand"><div class="brand-icon">🧺</div><div class="brand-copy"><strong>صيّاد النجوم</strong><span>جمع النجوم، وتفادى الخطر!</span></div></div>
+  <div class="stats"><div class="stat"><label>النقاط</label><strong id="score">٠</strong></div><div class="stat"><label>أفضل نتيجة</label><strong id="best">٠</strong></div><div class="stat"><label>الحياة</label><strong class="lives" id="lives">❤️❤️❤️</strong></div></div>
+</header>
+<div class="badge"><i class="dot"></i><span id="statusText">وجد النجوم قبل ما يطيحو!</span></div>
+<button class="sound" id="soundBtn" aria-label="تشغيل الصوت" title="الصوت">♪</button>
+<div class="toast" id="toast">+١ ⭐</div>
+<div class="mobile-controls" aria-hidden="true"><span>←</span><span>→</span></div>
+<section class="overlay" id="overlay">
+  <div class="card"><div class="hero-emoji" id="heroEmoji">🌟</div><p class="eyebrow" id="eyebrow">مغامرة ديال الليل</p><h1 id="title">صيّاد النجوم</h1><p id="message">حرّك السلة وجمع النجوم الذهبية. ردّ بالك من القنابل — عندك غير ٣ قلوب!</p><div class="rules"><span class="rule"><b>⭐</b> +نقطة</span><span class="rule"><b>💣</b> نقص قلب</span><span class="rule"><b>⌨️</b> ← →</span></div><button class="play" id="playBtn">يلا نلعبو!</button><p class="hint">استعمل الأسهم أو جرّ السلة بالماوس / اللمس</p></div>
+</section>
+</main>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const shell=document.querySelector('.game-shell'),overlay=document.getElementById('overlay');
+const scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),livesEl=document.getElementById('lives');
+const playBtn=document.getElementById('playBtn'),soundBtn=document.getElementById('soundBtn'),toast=document.getElementById('toast');
+const titleEl=document.getElementById('title'),messageEl=document.getElementById('message'),heroEmoji=document.getElementById('heroEmoji'),eyebrow=document.getElementById('eyebrow'),statusText=document.getElementById('statusText');
+let W=0,H=0,dpr=1,last=0,elapsed=0,spawnTimer=0,score=0,lives=3,best=0,running=false,muted=true,audio=null,shake=0,toastTimer=0;
+let items=[],particles=[],stars=[],keys={left:false,right:false},pointerActive=false;
+const player={x:0,y:0,w:88,h:60,target:0,hit:0};
+const rand=(a,b)=>a+Math.random()*(b-a),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+const fmt=n=>new Intl.NumberFormat('ar').format(n);
+try{best=Number(localStorage.getItem('star-catcher-best'))||0}catch(e){}
+bestEl.textContent=fmt(best);
+function resize(){const r=shell.getBoundingClientRect();W=r.width;H=r.height;dpr=Math.min(devicePixelRatio||1,2);canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);player.w=Math.max(70,Math.min(96,W*.13));player.h=player.w*.64;player.y=H-78-(innerWidth<600?12:0);player.x=clamp(player.x||W/2,player.w/2+8,W-player.w/2-8);player.target=player.x;stars=Array.from({length:Math.ceil(W*H/10000)},()=>({x:rand(0,W),y:rand(0,H),r:rand(.6,1.8),a:rand(.2,.8),phase:rand(0,7)}))}
+addEventListener('resize',resize,{passive:true});resize();
+function tone(freq=650,duration=.08,type='sine'){if(muted)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.055,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+duration)}catch(e){}}
+soundBtn.addEventListener('click',()=>{muted=!muted;soundBtn.textContent=muted?'♪':'♫';soundBtn.setAttribute('aria-label',muted?'تشغيل الصوت':'كتم الصوت');if(!muted)tone()});
+function reset(){score=0;lives=3;elapsed=0;spawnTimer=.45;items=[];particles=[];player.x=W/2;player.target=W/2;player.hit=0;shake=0;scoreEl.textContent=fmt(score);livesEl.textContent='❤️❤️❤️';statusText.textContent='وجد النجوم قبل ما يطيحو!'}
+function start(){reset();running=true;overlay.classList.add('hidden');last=performance.now();requestAnimationFrame(loop);tone(720,.09)}
+function endGame(){running=false;titleEl.textContent='سالـات اللعبة!';eyebrow.textContent='مزيان عليك، يا صيّاد';heroEmoji.textContent='✨';messageEl.innerHTML=`جمعتي <strong style="color:#ffe17b">${fmt(score)}</strong> نجمة. ${score>=best?'رقم قياسي جديد!':'واش تقدر تجيب أكثر؟'}`;playBtn.textContent='نعاودو؟';overlay.classList.remove('hidden');statusText.textContent='المغامرة سالات';tone(170,.35,'triangle')}
+playBtn.addEventListener('click',start);
+function showToast(text){toast.textContent=text;toast.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.classList.remove('show'),560)}
+function setTarget(clientX){const r=canvas.getBoundingClientRect();player.target=clamp(clientX-r.left,player.w/2+8,W-player.w/2-8)}
+canvas.addEventListener('pointerdown',e=>{pointerActive=true;canvas.setPointerCapture?.(e.pointerId);setTarget(e.clientX)});canvas.addEventListener('pointermove',e=>{if(pointerActive||e.pointerType==='mouse')setTarget(e.clientX)});canvas.addEventListener('pointerup',()=>pointerActive=false);canvas.addEventListener('pointercancel',()=>pointerActive=false);
+addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=true;if((e.key===' '||e.key==='Enter')&&!running)start()});addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.left=false;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.right=false});
+function spawn(){const danger=Math.random()<Math.min(.24,.12+elapsed/1800);const r=danger?rand(16,21):rand(14,18);items.push({x:rand(r+12,W-r-12),y:-30,r,type:danger?'bomb':'star',rot:rand(0,6.28),speed:rand(140,210)+Math.min(elapsed*.9,150),phase:rand(0,6.28)})}
+function burst(x,y,color,n=12){for(let i=0;i<n;i++){const a=rand(0,Math.PI*2),s=rand(35,180);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:rand(2,5),life:rand(.35,.8),max:.8,color})}}
+function catchItem(item){if(item.type==='star'){score++;scoreEl.textContent=fmt(score);burst(item.x,item.y,'#ffdb68',13);showToast('+١ ⭐');tone(750+Math.min(score*8,350),.07);if(score>best){best=score;bestEl.textContent=fmt(best);try{localStorage.setItem('star-catcher-best',String(best))}catch(e){}}}else{lives--;livesEl.textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives);player.hit=.65;shake=12;burst(item.x,item.y,'#ff655e',20);tone(120,.23,'sawtooth');statusText.textContent=lives?'أووف! رد بالك من القنابل':'آخر قلب!';if(lives<=0)endGame()}}
+function roundRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
+function drawBackground(t){const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1c2854');g.addColorStop(.58,'#273765');g.addColorStop(1,'#18284b');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+// distant glow
+const glow=ctx.createRadialGradient(W*.5,H*.33,3,W*.5,H*.33,W*.52);glow.addColorStop(0,'rgba(121,155,221,.15)');glow.addColorStop(1,'rgba(70,104,181,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+for(const s of stars){ctx.globalAlpha=s.a*(.72+.28*Math.sin(t*.001+s.phase));ctx.fillStyle='#e7edff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
+// moon
+ctx.fillStyle='#fff0c4';ctx.shadowColor='#ffe7a4';ctx.shadowBlur=28;ctx.beginPath();ctx.arc(W*.79,H*.22,23,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle='#293763';ctx.beginPath();ctx.arc(W*.79+10,H*.22-7,20,0,Math.PI*2);ctx.fill();
+// layered hills
+ctx.fillStyle='#202e57';ctx.beginPath();ctx.moveTo(0,H*.68);for(let x=0;x<=W+20;x+=20)ctx.lineTo(x,H*.68+Math.sin(x*.009+1)*28+Math.sin(x*.021)*11);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.fill();ctx.fillStyle='#19294e';ctx.beginPath();ctx.moveTo(0,H*.79);for(let x=0;x<=W+20;x+=20)ctx.lineTo(x,H*.79+Math.sin(x*.008+2)*22+Math.sin(x*.018+1)*8);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.fill();
+const groundY=H-48;ctx.fillStyle='#101d3b';ctx.fillRect(0,groundY,W,H-groundY);ctx.fillStyle='#6b9b9b';ctx.globalAlpha=.35;ctx.fillRect(0,groundY,W,2);ctx.globalAlpha=1;for(let x=12;x<W;x+=35){ctx.fillStyle='#a1d9a8';ctx.globalAlpha=.32;ctx.fillRect(x,groundY+rand(4,20),2,3)}ctx.globalAlpha=1}
+function drawStar(x,y,r,rot){ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.shadowColor='#ffd34d';ctx.shadowBlur=16;ctx.fillStyle='#ffd867';ctx.strokeStyle='#fff0ac';ctx.lineWidth=1.5;ctx.beginPath();for(let i=0;i<10;i++){let a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;ctx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+function drawBomb(x,y,r,rot){ctx.save();ctx.translate(x,y);ctx.rotate(rot*.15);ctx.shadowColor='#ff675d';ctx.shadowBlur=12;const g=ctx.createRadialGradient(-r*.3,-r*.4,2,0,0,r);g.addColorStop(0,'#707a94');g.addColorStop(1,'#30384e');ctx.fillStyle=g;ctx.strokeStyle='#aab3c5';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,2,r*.83,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#ffc56d';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(r*.38,-r*.58);ctx.quadraticCurveTo(r*.68,-r*1.1,r*.97,-r*.83);ctx.stroke();ctx.fillStyle='#fff0a0';ctx.beginPath();ctx.arc(r*.99,-r*.84,3.2,0,Math.PI*2);ctx.fill();ctx.restore()}
+function drawBasket(t){const x=player.x,y=player.y,w=player.w,h=player.h;ctx.save();ctx.translate(x,y);if(player.hit>0&&Math.floor(t/75)%2===0)ctx.globalAlpha=.42;ctx.shadowColor='#ffca55';ctx.shadowBlur=16;
+// handles and basket
+ctx.strokeStyle='#ffe29a';ctx.lineWidth=5;ctx.beginPath();ctx.arc(0,-h*.08,w*.34,Math.PI,Math.PI*2);ctx.stroke();const grad=ctx.createLinearGradient(0,-h*.1,0,h*.5);grad.addColorStop(0,'#ffd56c');grad.addColorStop(1,'#d9893e');ctx.fillStyle=grad;ctx.strokeStyle='#ffedb5';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-w*.44,-h*.07);ctx.lineTo(-w*.35,h*.45);ctx.quadraticCurveTo(0,h*.66,w*.35,h*.45);ctx.lineTo(w*.44,-h*.07);ctx.closePath();ctx.fill();ctx.stroke();ctx.shadowBlur=0;ctx.strokeStyle='#a85f35';ctx.lineWidth=3;for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(i*w*.19,-h*.02);ctx.lineTo(i*w*.14,h*.49);ctx.stroke()}ctx.strokeStyle='#ffe6a0';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-w*.44,-h*.07);ctx.lineTo(w*.44,-h*.07);ctx.stroke();ctx.fillStyle='#fff1bd';ctx.font=`${Math.max(14,w*.23)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('★',0,h*.23);ctx.restore()}
+function loop(now){if(!running)return;const dt=Math.min(.034,(now-last)/1000||0);last=now;elapsed+=dt;spawnTimer-=dt;while(spawnTimer<=0){spawn();spawnTimer+=Math.max(.32,.92-elapsed*.006)*rand(.72,1.24)}
+if(keys.left)player.target-=390*dt;if(keys.right)player.target+=390*dt;player.target=clamp(player.target,player.w/2+8,W-player.w/2-8);player.x+=(player.target-player.x)*Math.min(1,dt*13);if(player.hit>0)player.hit-=dt;
+for(let i=items.length-1;i>=0;i--){const o=items[i];o.y+=o.speed*dt;o.rot+=dt*(o.type==='star'?1.5:.6);o.x+=Math.sin(elapsed*1.6+o.phase)*17*dt;if(o.y+o.r>player.y-player.h*.45&&o.y-o.r<player.y+player.h*.42&&Math.abs(o.x-player.x)<player.w*.44+o.r*.55){items.splice(i,1);catchItem(o);if(!running)return}else if(o.y>H+30)items.splice(i,1)}
+for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=250*dt;p.vx*=.99;if(p.life<=0)particles.splice(i,1)}
+ctx.save();if(shake>0){ctx.translate(rand(-shake,shake),rand(-shake,shake));shake*=.85}drawBackground(now);for(const o of items){if(o.type==='star')drawStar(o.x,o.y,o.r,o.rot);else drawBomb(o.x,o.y,o.r,o.rot)}for(const p of particles){ctx.globalAlpha=clamp(p.life/p.max,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;drawBasket(now);ctx.restore();requestAnimationFrame(loop)}
+// initialize a decorative idle scene
+function idle(){if(running)return;drawBackground(performance.now());drawBasket(performance.now());requestAnimationFrame(idle)}idle();
+})();
+</script>
+</body>
+</html>
