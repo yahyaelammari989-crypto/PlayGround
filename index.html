@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#071521" />
+<title>BOOSTBALL — 1v1 Arena</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+:root{--cyan:#54f4ec;--orange:#ff8c4a;--ink:#071521;--panel:rgba(7,21,33,.78);--line:rgba(167,223,230,.2)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--ink);color:#effcff;font-family:'Barlow Condensed',sans-serif;user-select:none;-webkit-user-select:none;touch-action:none}
+#game{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+#vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,transparent 42%,rgba(2,10,17,.36) 100%);z-index:2}
+.hud{position:fixed;inset:0;z-index:3;pointer-events:none}.topbar{position:absolute;top:max(22px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px}
+.brand{position:absolute;top:max(25px,env(safe-area-inset-top));left:clamp(18px,4vw,58px);font-size:15px;font-weight:900;letter-spacing:.22em;color:#e9ffff;text-shadow:0 2px 18px #42eee866}.brand span{color:var(--cyan)}
+.scoreboard{height:80px;display:flex;align-items:center;background:linear-gradient(90deg,rgba(0,14,24,.9),rgba(7,20,31,.86),rgba(0,14,24,.9));border:1px solid rgba(175,237,239,.28);clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);box-shadow:0 12px 40px #0006;min-width:330px}
+.team{height:100%;display:flex;align-items:center;gap:12px;padding:0 20px;min-width:130px}.team.right{justify-content:flex-end;text-align:right}.team-name{font-size:12px;line-height:1.05;letter-spacing:.15em;font-weight:800}.team-name small{display:block;font:9px 'DM Mono',monospace;letter-spacing:.12em;color:#a8c0c8;margin-top:5px}.team-mark{height:12px;width:12px;transform:rotate(45deg);background:var(--cyan);box-shadow:0 0 15px var(--cyan)}.right .team-mark{background:var(--orange);box-shadow:0 0 15px var(--orange)}.score{font:800 38px 'Barlow Condensed',sans-serif;min-width:28px;text-align:center}.score-sep{color:#48616b;font-size:23px;font-weight:600}.clock{font:11px 'DM Mono',monospace;color:#c4e0e6;margin:0 17px;min-width:44px;text-align:center}.period{position:absolute;top:88px;left:50%;transform:translateX(-50%);font:10px 'DM Mono',monospace;letter-spacing:.22em;color:#b9d1d7;text-shadow:0 1px 5px #000}.status{position:absolute;top:calc(max(22px,env(safe-area-inset-top)) + 95px);left:50%;transform:translateX(-50%);font:10px 'DM Mono',monospace;letter-spacing:.16em;color:var(--cyan);white-space:nowrap;opacity:.85}
+.boost-wrap{position:absolute;bottom:max(34px,env(safe-area-inset-bottom));left:clamp(22px,5vw,70px);width:190px}.boost-head{display:flex;justify-content:space-between;align-items:center;font:10px 'DM Mono',monospace;letter-spacing:.16em;margin-bottom:8px;color:#c1d9df}.boost-value{font-size:12px;color:var(--cyan)}.boost-track{height:8px;background:#d9faff20;border:1px solid #d9faff28;transform:skewX(-18deg);padding:1px}.boost-fill{height:100%;width:100%;background:linear-gradient(90deg,#2cbed1,var(--cyan));box-shadow:0 0 12px #54f4ec99;transition:width .12s}
+.speed{position:absolute;right:clamp(22px,5vw,70px);bottom:max(35px,env(safe-area-inset-bottom));text-align:right}.speed b{font:700 33px 'Barlow Condensed',sans-serif;letter-spacing:.02em}.speed span{display:block;font:9px 'DM Mono',monospace;letter-spacing:.18em;color:#9eb9c2}.speed small{font-size:14px;color:#9eb9c2}
+.hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);font:9px 'DM Mono',monospace;letter-spacing:.12em;color:#b4cad0aa;white-space:nowrap}
+#overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:linear-gradient(115deg,rgba(3,14,24,.82),rgba(7,25,38,.51) 55%,rgba(5,15,23,.78));transition:opacity .35s,visibility .35s}#overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}.card{width:min(580px,calc(100vw - 32px));padding:clamp(24px,5vw,48px);background:linear-gradient(145deg,rgba(8,28,42,.95),rgba(4,16,27,.91));border:1px solid rgba(168,237,239,.25);box-shadow:0 25px 100px #0008;position:relative;text-align:center;clip-path:polygon(18px 0,100% 0,100% calc(100% - 18px),calc(100% - 18px) 100%,0 100%,0 18px)}.card:before{content:'';position:absolute;inset:0 auto auto 0;width:90px;height:2px;background:var(--cyan);box-shadow:0 0 18px var(--cyan)}.eyebrow{font:10px 'DM Mono',monospace;color:var(--cyan);letter-spacing:.28em;margin-bottom:12px}.title{font-size:clamp(53px,10vw,90px);line-height:.78;font-weight:900;letter-spacing:-.03em;margin:0;color:#f2ffff;text-shadow:0 5px 35px #44e8e744}.title em{font-style:normal;color:var(--cyan)}.subtitle{font-size:14px;letter-spacing:.14em;color:#a6c1ca;margin:20px auto 28px}.rule{height:1px;background:linear-gradient(90deg,transparent,#a5dce344,transparent);margin:23px 0}.instructions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:left;margin-bottom:28px}.instruction{padding:10px;background:#c9faff09;border:1px solid #c9faff12}.instruction b{display:block;font:11px 'DM Mono',monospace;color:#f0ffff;margin-bottom:5px}.instruction span{font-size:11px;color:#9bb8c2;letter-spacing:.05em}.key{display:inline-block;border:1px solid #e4ffff55;padding:2px 5px;margin-right:2px;color:#f1ffff!important;font:10px 'DM Mono',monospace!important}.play{border:0;cursor:pointer;background:var(--cyan);color:#04202a;padding:14px 35px;font:800 16px 'Barlow Condensed',sans-serif;letter-spacing:.19em;box-shadow:0 0 28px #54f4ec44;transition:transform .16s,box-shadow .16s}.play:hover{transform:translateY(-2px);box-shadow:0 0 36px #54f4ec88}.play:active{transform:translateY(1px)}.fineprint{font:9px 'DM Mono',monospace;color:#77939c;letter-spacing:.12em;margin-top:18px}
+#goal-callout{position:fixed;z-index:4;left:50%;top:37%;transform:translate(-50%,-50%) scale(.8);font-size:clamp(54px,11vw,120px);font-weight:900;letter-spacing:.04em;color:white;text-shadow:0 0 28px #50eeebaa;opacity:0;pointer-events:none;transition:all .24s}.show-goal{opacity:1!important;transform:translate(-50%,-50%) scale(1)!important}
+#touch{display:none;position:fixed;inset:0;z-index:4;pointer-events:none}.touch-cluster{position:absolute;bottom:max(22px,env(safe-area-inset-bottom));display:flex;gap:9px;pointer-events:auto}.touch-left{left:16px}.touch-right{right:16px;align-items:flex-end}.touch-btn{width:53px;height:53px;border-radius:50%;border:1px solid #d9ffff55;background:#071b2cb8;color:white;font:700 16px 'DM Mono',monospace;display:grid;place-items:center;box-shadow:0 5px 20px #0006;touch-action:none}.touch-btn.boost-btn{width:63px;height:63px;border-color:#54f4ecaa;color:var(--cyan)}.touch-btn.active{background:#54f4ec55}.touch-column{display:flex;flex-direction:column;gap:9px}.touch-inline{display:flex;gap:9px}@media(max-width:700px){.brand{font-size:11px;top:18px;left:15px}.topbar{top:14px}.scoreboard{min-width:278px;height:65px}.team{min-width:104px;padding:0 12px;gap:8px}.team-name{font-size:10px}.team-name small{font-size:8px}.team-mark{width:9px;height:9px}.score{font-size:30px}.clock{margin:0 9px;min-width:36px;font-size:9px}.period{top:80px}.status{top:98px}.boost-wrap{bottom:111px;width:135px;left:18px}.speed{bottom:111px;right:18px}.speed b{font-size:27px}.hint{display:none}.instructions{gap:5px}.instruction{padding:8px 6px}.instruction b{font-size:9px}.instruction span{font-size:9px}.card{padding:28px 20px}.subtitle{font-size:11px;margin:17px auto 22px}.fineprint{font-size:8px}#touch{display:block}}
+@media (hover:none) and (min-width:701px){#touch{display:block}.boost-wrap,.speed{bottom:115px}}
+</style>
+</head>
+<body>
+<div id="game"></div><div id="vignette"></div>
+<div class="hud">
+  <div class="brand">BOOST<span>/</span>BALL <span style="color:#92abb2;font-weight:500;letter-spacing:.1em">ARENA SERIES</span></div>
+  <div class="topbar"><div class="scoreboard">
+    <div class="team"><i class="team-mark"></i><div class="team-name">TURBO<span><small>YOU</small></span></div></div><div class="score" id="score-you">0</div><div class="score-sep">:</div><div class="score" id="score-bot">0</div><div class="team right"><div class="team-name">ROGUE<span><small>CPU</small></span></div><i class="team-mark"></i></div>
+  </div></div>
+  <div class="period">EXHIBITION · FIRST TO 3</div><div class="status" id="status">KICKOFF READY</div>
+  <div class="boost-wrap"><div class="boost-head"><span>BOOST</span><span class="boost-value" id="boost-value">100</span></div><div class="boost-track"><div class="boost-fill" id="boost-fill"></div></div></div>
+  <div class="speed"><b id="speed-value">000</b> <small>KM/H</small><span>VELOCITY</span></div>
+  <div class="hint">WASD DRIVE <span style="color:#54f4ec">·</span> SPACE JUMP <span style="color:#54f4ec">·</span> SHIFT BOOST <span style="color:#54f4ec">·</span> R RESET BALL</div>
+</div>
+<div id="goal-callout">GOAL!</div>
+<div id="touch"><div class="touch-cluster touch-left"><div class="touch-column"><button class="touch-btn" data-key="w">▲</button><div class="touch-inline"><button class="touch-btn" data-key="a">◀</button><button class="touch-btn" data-key="s">▼</button><button class="touch-btn" data-key="d">▶</button></div></div></div><div class="touch-cluster touch-right"><button class="touch-btn" data-key="space">JUMP</button><button class="touch-btn boost-btn" data-key="shift">BOOST</button></div></div>
+<div id="overlay"><div class="card"><div class="eyebrow">// 01 — KICKOFF</div><h1 class="title">BOOST<em>/</em><br>BALL</h1><p class="subtitle">3D SOCCER. ROCKET-POWERED. FIRST TO THREE.</p><div class="rule"></div><div class="instructions"><div class="instruction"><b><i class="key">W</i><i class="key">A</i><i class="key">S</i><i class="key">D</i></b><span>Drive & steer</span></div><div class="instruction"><b><i class="key">SHIFT</i> + <i class="key">SPACE</i></b><span>Boost & jump</span></div><div class="instruction"><b><i class="key">R</i></b><span>Reset ball</span></div></div><button id="play" class="play">START MATCH <span>→</span></button><div class="fineprint">ONE BOT · TWO CARS · NO MERCY</div></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const mount=document.querySelector('#game');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x081521);scene.fog=new THREE.Fog(0x081521,48,105);
+const camera=new THREE.PerspectiveCamera(54,innerWidth/innerHeight,.1,180);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.8));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;mount.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0x9fe5ff,0x16212a,2.1));const sun=new THREE.DirectionalLight(0xe4f8ff,3.2);sun.position.set(-18,34,11);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=42;sun.shadow.camera.bottom=-42;sun.shadow.bias=-.0002;scene.add(sun);
+const mat=(color,rough=.6,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
+const floorMat=mat(0x174438,.86),dark=mat(0x081722,.48,.3),white=mat(0xc0e1dc,.55,.15),cyan=mat(0x45f0e2,.32,.25),orange=mat(0xff8247,.34,.18),glass= new THREE.MeshStandardMaterial({color:0x42c8d8,roughness:.22,metalness:.1,transparent:true,opacity:.08,side:THREE.DoubleSide});
+function box(parent,w,h,d,material,x,y,z,cast=true,receive=true){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=cast;m.receiveShadow=receive;parent.add(m);return m}
+function cylinder(parent,r1,r2,h,material,x,y,z,rotX=0){const m=new THREE.Mesh(new THREE.CylinderGeometry(r1,r2,h,16),material);m.position.set(x,y,z);m.rotation.x=rotX;m.castShadow=true;parent.add(m);return m}
+// floating, floodlit arena
+box(scene,38,.65,58,floorMat,0,-.55,0,false,true);
+const turf=new THREE.Mesh(new THREE.PlaneGeometry(36,56),floorMat);turf.rotation.x=-Math.PI/2;turf.position.y=-.19;turf.receiveShadow=true;scene.add(turf);
+for(let i=0;i<14;i++){const stripe=new THREE.Mesh(new THREE.PlaneGeometry(36,4),new THREE.MeshBasicMaterial({color:i%2?0x1a4a3c:0x194638,transparent:true,opacity:.25}));stripe.rotation.x=-Math.PI/2;stripe.position.set(0,-.175,-26+i*4);scene.add(stripe)}
+// boundary walls / transparent boards
+for(const s of [-1,1]){box(scene,.48,5,58,dark,s*18.15,2.05,0);box(scene,.12,3,56,glass,s*17.86,2.35,0,false,false);box(scene,36,5,.45,dark,0,2.05,s*28.8);box(scene,36,.18,.12,cyan,0,4.58,s*28.48,false,false);box(scene,.12,5,58,cyan,s*17.87,2.1,0,false,false)}
+// painted lines: sideline, halfway, center circle and box markings
+function line(w,d,x,z,color=0x9beae0,op=.68){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshBasicMaterial({color,transparent:true,opacity:op}));m.rotation.x=-Math.PI/2;m.position.set(x,-.155,z);scene.add(m)}
+line(.12,55,-16.2,0);line(.12,55,16.2,0);line(32,.12,0,0);line(32,.1,0,-23.3);line(32,.1,0,23.3);
+const centerCircle=new THREE.Mesh(new THREE.RingGeometry(5.85,5.98,64),new THREE.MeshBasicMaterial({color:0x9beae0,transparent:true,opacity:.65,side:THREE.DoubleSide}));centerCircle.rotation.x=-Math.PI/2;centerCircle.position.y=-.14;scene.add(centerCircle);
+for(const z of [-1,1]){line(15,.12,0,z*22.5);line(.12,7,-7.5,z*19);line(.12,7,7.5,z*19);line(15,.12,0,z*16)}
+// Goal frames and deep net bays
+const goalFrames=[];for(const end of [-1,1]){const color=end===1?cyan:orange;const z=end*28.4;const g=new THREE.Group();scene.add(g);goalFrames.push(g);
+box(g,.35,5,.42,color,-5,2.45,z,false);box(g,.35,5,.42,color,5,2.45,z,false);box(g,10.35,.35,.42,color,0,4.9,z,false);
+for(let x=-4.5;x<=4.51;x+=1.5)box(g,.035,4.5,.035,color,x,2.3,z+end*2,false,false);
+for(let y=.4;y<4.7;y+=1)box(g,10,.025,.035,color,0,y,z+end*2,false,false);
+const back=box(g,10,.05,.05,color,0,.2,z+end*5,false,false);box(g,10,.05,.05,color,0,4.75,z+end*5,false,false);
+const glow=new THREE.PointLight(color.color,7,15);glow.position.set(0,3.5,z);scene.add(glow);
+}
+// Stadium architecture and lights
+for(let side of [-1,1]){for(let i=0;i<10;i++){let z=-26+i*5.7;const pole=box(scene,.18,7,.18,dark,side*21,2.5,z,false);box(scene,2.5,.26,.6,white,side*20,6.1,z,false);const lamp=new THREE.PointLight(0xa6fbff,1.5,23,2);lamp.position.set(side*19,6,z);scene.add(lamp)}
+box(scene,3,.45,59,dark,side*23.2,7.2,0,false);box(scene,3,.25,59,side===-1?cyan:orange,side*23.2,7.45,0,false)}
+// crowd tiers as tiny luminous dots
+const crowdGeo=new THREE.BufferGeometry(),crowdPositions=[],crowdColors=[];for(let i=0;i<1900;i++){const side=Math.random()<.5?-1:1;crowdPositions.push(side*(20.2+Math.random()*5),2.7+Math.random()*5,-29+Math.random()*58);const c=new THREE.Color().setHSL(Math.random()<.5?.49:.08,.8,.42+Math.random()*.38);crowdColors.push(c.r,c.g,c.b)}crowdGeo.setAttribute('position',new THREE.Float32BufferAttribute(crowdPositions,3));crowdGeo.setAttribute('color',new THREE.Float32BufferAttribute(crowdColors,3));const crowd=new THREE.Points(crowdGeo,new THREE.PointsMaterial({size:.12,vertexColors:true,transparent:true,opacity:.8}));scene.add(crowd);
+
+function makeCar(primary,accent){const root=new THREE.Group(),body=new THREE.Group();root.add(body);const paint=mat(primary,.3,.43),trim=mat(accent,.27,.25),rubber=mat(0x10151a,.82),glassMat=new THREE.MeshPhysicalMaterial({color:0x102536,roughness:.17,metalness:.45,clearcoat:1,clearcoatRoughness:.1});
+box(body,2.25,.57,3.55,paint,0,.62,0);box(body,2.06,.22,1.14,trim,0,.95,.75);box(body,1.48,.65,1.52,paint,0,1.1,-.38);const cabin=box(body,1.45,.56,1.4,glassMat,0,1.55,-.38);cabin.rotation.x=-.08;
+box(body,1.95,.13,.34,trim,0,.55,-1.62);box(body,.18,.12,.12,mat(0xffeecc,.25),-.77,.74,-1.79);box(body,.18,.12,.12,mat(0xffeecc,.25),.77,.74,-1.79);
+for(const x of [-1,1])for(const z of [-1.12,1.12]){const tire=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.3,18),rubber);tire.rotation.z=Math.PI/2;tire.position.set(x*1.08,.42,z);tire.castShadow=true;body.add(tire);const hub=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.315,12),trim);hub.rotation.z=Math.PI/2;hub.position.copy(tire.position);body.add(hub)}
+const spoiler=box(body,1.75,.12,.3,trim,0,1.12,1.55);box(body,.1,.4,.12,trim,-.68,1.05,1.48);box(body,.1,.4,.12,trim,.68,1.05,1.48);
+const flame=new THREE.Mesh(new THREE.ConeGeometry(.29,1.35,12),new THREE.MeshBasicMaterial({color:primary,transparent:true,opacity:.75}));flame.rotation.x=Math.PI/2;flame.position.set(0,.62,2.15);flame.visible=false;body.add(flame);
+const light=new THREE.PointLight(primary,0,5);light.position.set(0,.6,2.2);body.add(light);
+const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.7,24),new THREE.MeshBasicMaterial({color:primary,transparent:true,opacity:.16}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.015;root.add(shadow);
+root.userData={body,flame,light,paint,shadow};scene.add(root);return root}
+const player=makeCar(0x3be4e0,0xaffff6),bot=makeCar(0xff743e,0xffd18c);
+player.position.set(0,0,10);bot.position.set(0,0,-10);player.rotation.y=0;bot.rotation.y=Math.PI;
+const ball=new THREE.Group();const ballCore=new THREE.Mesh(new THREE.SphereGeometry(1.05,32,24),mat(0xe9f5ef,.3,.12));ballCore.castShadow=true;ballCore.receiveShadow=true;ball.add(ballCore);
+const ballSeams=new THREE.Group();ball.add(ballSeams);const seamMat=new THREE.MeshStandardMaterial({color:0x25363b,roughness:.68});for(let i=0;i<3;i++){const ring=new THREE.Mesh(new THREE.TorusGeometry(1.055,.035,6,40),seamMat);ring.rotation.set(Math.PI/2,0,i*Math.PI/3);ballSeams.add(ring)}
+const panels=new THREE.Group();ball.add(panels);for(let i=0;i<12;i++){const a=i*Math.PI/6,patch=new THREE.Mesh(new THREE.CircleGeometry(.19,6),mat(i%3===0?0x74f4e3:0x53636a,.48,.12));patch.position.set(Math.cos(a)*.78,Math.sin(a)*.78,Math.sqrt(1-.78*.78)*1.045);patch.lookAt(patch.position.clone().multiplyScalar(2));panels.add(patch)}
+const ballGlow=new THREE.PointLight(0xc5fff7,1.3,8);ball.add(ballGlow);scene.add(ball);ball.position.set(0,1.1,0);
+const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(1.25,28),new THREE.MeshBasicMaterial({color:0x020c0d,transparent:true,opacity:.38}));ballShadow.rotation.x=-Math.PI/2;ballShadow.position.y=-.18;scene.add(ballShadow);
+// boost pads
+const pads=[];for(let z=-22;z<=22;z+=11)for(let x of [-13,-7,0,7,13]){if(Math.abs(x)<4&&Math.abs(z)<17)continue;const group=new THREE.Group();group.position.set(x,-.08,z);scene.add(group);const disc=new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.09,20),mat(0x327b75,.35,.4));group.add(disc);const ring=new THREE.Mesh(new THREE.TorusGeometry(.44,.045,6,24),cyan);ring.rotation.x=Math.PI/2;ring.position.y=.07;group.add(ring);pads.push({group,x,z,active:true,ring})}
+
+const keys=new Set();let scoreYou=0,scoreBot=0,boost=100,botBoost=100,live=false,phase='menu',phaseTimer=0,matchEnded=false,last=performance.now(),goalTimer=0;
+const velPlayer=new THREE.Vector3(),velBot=new THREE.Vector3(),ballVel=new THREE.Vector3();let playerYaw=0,botYaw=Math.PI,playerJump=0,playerVY=0,botJump=0,botVY=0;
+const el=(id)=>document.getElementById(id);const overlay=el('overlay'),status=el('status');
+function startMatch(){scoreYou=scoreBot=0;el('score-you').textContent='0';el('score-bot').textContent='0';matchEnded=false;resetKickoff();overlay.classList.add('hidden');live=true;phase='countdown';phaseTimer=3.1;status.textContent='GET READY';}
+function resetKickoff(){player.position.set(0,0,10);bot.position.set(0,0,-10);playerYaw=0;botYaw=Math.PI;player.rotation.y=playerYaw;bot.rotation.y=botYaw;velPlayer.set(0,0,0);velBot.set(0,0,0);playerJump=playerVY=botJump=botVY=0;ball.position.set(0,1.1,0);ballVel.set(0,0,0);ball.rotation.set(0,0,0);}
+function resetBall(){if(!live||phase==='goal'||phase==='countdown')return;ball.position.set(0,1.1,0);ballVel.set(0,0,0);status.textContent='BALL RESET';setTimeout(()=>{if(phase==='play')status.textContent='';},1000)}
+function score(who){if(phase!=='play')return;phase='goal';phaseTimer=2.65;if(who==='you'){scoreYou++;el('score-you').textContent=scoreYou}else{scoreBot++;el('score-bot').textContent=scoreBot}el('goal-callout').textContent=who==='you'?'GOAL!':'THEY SCORED';el('goal-callout').style.color=who==='you'?'#54f4ec':'#ff9b60';el('goal-callout').classList.add('show-goal');status.textContent=who==='you'?'NICE SHOT':'REGROUP';ballVel.set(0,0,0);if(scoreYou>=3||scoreBot>=3){matchEnded=true;phaseTimer=3.1;status.textContent=scoreYou>=3?'MATCH POINT · VICTORY':'MATCH POINT · DEFEAT';}}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function moveCar(car,vel,yaw,throttle,steer,boosting,dt,isPlayer=false){const forward=new THREE.Vector3(Math.sin(yaw),0,-Math.cos(yaw)),side=new THREE.Vector3(forward.z,0,-forward.x);let forwardSpeed=vel.dot(forward);const engine=isPlayer?21:17.5;forwardSpeed+=throttle*engine*dt;if(boosting)forwardSpeed+=throttle*28*dt;forwardSpeed=clamp(forwardSpeed,-9,boosting?27:21);const sideSpeed=vel.dot(side);forwardSpeed*=Math.exp(-.32*dt);vel.copy(forward.multiplyScalar(forwardSpeed).add(side.multiplyScalar(sideSpeed*Math.exp(-5.3*dt))));const grip=clamp(Math.abs(forwardSpeed)/2,0,1);yaw+=steer*2.25*grip*(forwardSpeed>=0?1:-1)*dt;car.rotation.y=yaw;car.position.x+=vel.x*dt;car.position.z+=vel.z*dt;car.position.x=clamp(car.position.x,-16.2,16.2);car.position.z=clamp(car.position.z,-26.4,26.4);return yaw}
+function jumpPlayer(){if(!live||phase!=='play'||playerJump>.06)return;playerVY=8.2}
+function ballCollision(car,vel,yaw,isBot=false){const cp=new THREE.Vector3(car.position.x,car.position.y+.72,car.position.z),diff=ball.position.clone().sub(cp);const dist=diff.length();if(dist<2.1&&dist>.001){const normal=diff.normalize();const forward=new THREE.Vector3(Math.sin(yaw),0,-Math.cos(yaw));const speed=vel.length();const hit=Math.max(2.5,speed*.62+3.8);ballVel.addScaledVector(normal,hit);ballVel.addScaledVector(forward,Math.max(0, speed*.27+1.6));ballVel.y=Math.max(ballVel.y,Math.abs(normal.y)*4+2.1);ball.position.addScaledVector(normal,2.1-dist);if(isBot){ballVel.z+=.8}else{ballVel.z-=.8}}}
+function updateBall(dt){ballVel.y-=16*dt;ball.position.addScaledVector(ballVel,dt);ball.rotation.x+=ballVel.z*dt*.55;ball.rotation.z-=ballVel.x*dt*.55;
+if(ball.position.y<1.08){ball.position.y=1.08;if(ballVel.y<0)ballVel.y*=-.68;if(Math.abs(ballVel.y)<.8)ballVel.y=0;ballVel.x*=Math.exp(-.75*dt);ballVel.z*=Math.exp(-.75*dt)}
+if(Math.abs(ball.position.x)>16.8){ball.position.x=Math.sign(ball.position.x)*16.8;ballVel.x*=-.72}
+if(ball.position.z>28.05){if(Math.abs(ball.position.x)<5&&ball.position.y<5.15){score('bot');return}else{ball.position.z=28.05;ballVel.z*=-.72}}
+if(ball.position.z< -28.05){if(Math.abs(ball.position.x)<5&&ball.position.y<5.15){score('you');return}else{ball.position.z=-28.05;ballVel.z*=-.72}}
+ballVel.x*=Math.exp(-.055*dt);ballVel.z*=Math.exp(-.055*dt);ballShadow.position.set(ball.position.x,-.17,ball.position.z);ballShadow.scale.setScalar(clamp(1.2-(ball.position.y-1)*.075,.65,1.2));ballShadow.material.opacity=clamp(.42-(ball.position.y-1)*.035,.13,.42)}
+
+function update(dt,now){
+  if(phase==='countdown'){phaseTimer-=dt;const n=Math.ceil(phaseTimer);status.textContent=n>0?`KICKOFF IN ${n}`:'GO!';if(phaseTimer<=0){phase='play';phaseTimer=0;status.textContent='';}}
+  if(phase==='goal'){phaseTimer-=dt;if(phaseTimer<=0){el('goal-callout').classList.remove('show-goal');if(matchEnded){live=false;phase='finished';overlay.classList.remove('hidden');document.querySelector('.eyebrow').textContent=scoreYou>=3?'// MATCH COMPLETE — VICTORY':'// MATCH COMPLETE — DEFEAT';document.querySelector('.title').innerHTML=scoreYou>=3?'YOU<em> WIN</em>':'TRY<em> AGAIN</em>';document.querySelector('.subtitle').textContent=`FINAL SCORE  ${scoreYou} — ${scoreBot}`;document.querySelector('.play').innerHTML='PLAY AGAIN <span>→</span>';status.textContent='FULL TIME';}else{resetKickoff();phase='countdown';phaseTimer=2.2;status.textContent='NEXT KICKOFF';}}}
+  if(phase==='play'){
+    const throttle=(keys.has('w')||keys.has('arrowup')?1:0)-(keys.has('s')||keys.has('arrowdown')?1:0),steer=(keys.has('d')||keys.has('arrowright')?1:0)-(keys.has('a')||keys.has('arrowleft')?1:0);
+    const boosting=(keys.has('shift')||keys.has('shiftleft')||keys.has('shiftright'))&&boost>0.3;
+    if(boosting){boost=Math.max(0,boost-37*dt)}else boost=Math.min(100,boost+10*dt);
+    playerYaw=moveCar(player,velPlayer,playerYaw,throttle,steer,boosting,dt,true);
+    const ud=player.userData;ud.flame.visible=boosting;ud.light.intensity=boosting?3.4:0;ud.body.rotation.z=THREE.MathUtils.damp(ud.body.rotation.z,-steer*.09,5,dt);
+    if(keys.has('space')&&playerJump<.05)playerVY=8.2;
+    playerJump=Math.max(0,playerJump+playerVY*dt);playerVY-=20*dt;if(playerJump===0&&playerVY<0)playerVY=0;player.position.y=playerJump;
+    updateBot(dt);ballCollision(player,velPlayer,playerYaw,false);ballCollision(bot,velBot,botYaw,true);updateBall(dt);
+    for(const pad of pads){if(pad.active&&Math.hypot(player.position.x-pad.x,player.position.z-pad.z)<1.15){boost=Math.min(100,boost+30);pad.active=false;pad.group.visible=false;setTimeout(()=>{pad.active=true;pad.group.visible=true},5000)}}
+  }else if(phase==='countdown'||phase==='goal'){// Keep idle cars and ball stable during kickoff / goal celebration.
+    if(phase==='countdown'&&phaseTimer<2.8&&phaseTimer>0){ball.position.set(0,1.1,0);ballVel.set(0,0,0)}
+  }
+  el('boost-value').textContent=Math.round(boost);el('boost-fill').style.width=`${boost}%`;el('speed-value').textContent=String(Math.round(velPlayer.length()*10)).padStart(3,'0');
+  player.userData.shadow.position.y=.018;player.userData.shadow.material.opacity=playerJump>.1?.09:.18;
+  bot.userData.shadow.material.opacity=botJump>.1?.09:.18;
+  const target=new THREE.Vector3(player.position.x,player.position.y+1.1,player.position.z);const forward=new THREE.Vector3(Math.sin(playerYaw),0,-Math.cos(playerYaw));const desired=new THREE.Vector3().copy(target).addScaledVector(forward,-10.8).add(new THREE.Vector3(0,5.7,0));desired.x+=ball.position.x*.08;desired.z+=ball.position.z*.035;camera.position.lerp(desired,1-Math.exp(-4.4*dt));const look=target.clone().addScaledVector(forward,5.4).add(new THREE.Vector3(0,.15,0));camera.lookAt(look);
+  ballGlow.intensity=1.1+Math.sin(now*.003)*.2;
+}
+function frame(now){requestAnimationFrame(frame);const dt=Math.min(.034,(now-last)/1000||.016);last=now;if(live)update(dt,now);else{const t=now*.00018;camera.position.set(Math.sin(t)*34,22,Math.cos(t)*38);camera.lookAt(0,1,0);ball.position.y=1.1+Math.sin(now*.002)*.14;ball.rotation.y+=dt*.32;}
+  renderer.render(scene,camera)}requestAnimationFrame(frame);
+
+el('play').addEventListener('click',()=>{document.querySelector('.eyebrow').textContent='// 01 — KICKOFF';document.querySelector('.title').innerHTML='BOOST<em>/</em><br>BALL';document.querySelector('.subtitle').textContent='3D SOCCER. ROCKET-POWERED. FIRST TO THREE.';document.querySelector('.play').innerHTML='START MATCH <span>→</span>';startMatch()});
+function keyName(e){return e.key.toLowerCase()}
+window.addEventListener('keydown',e=>{const key=keyName(e);if([' ','arrowup','arrowdown','arrowleft','arrowright'].includes(key))e.preventDefault();keys.add(key);if(key==='r')resetBall();if(key===' '&&phase==='play'&&playerJump<.05)jumpPlayer()});
+window.addEventListener('keyup',e=>keys.delete(keyName(e)));window.addEventListener('blur',()=>keys.clear());
+for(const button of document.querySelectorAll('.touch-btn')){const key=button.dataset.key;const down=e=>{e.preventDefault();keys.add(key);button.classList.add('active');if(key==='space'&&phase==='play'&&playerJump<.05)jumpPlayer()};const up=e=>{e.preventDefault();keys.delete(key);button.classList.remove('active')};button.addEventListener('pointerdown',down);button.addEventListener('pointerup',up);button.addEventListener('pointercancel',up);button.addEventListener('pointerleave',up)}
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.8))});
+</script>
+</body>
+</html>
+function updateBot(dt){const target=new THREE.Vector3(ball.position.x,0,ball.position.z),dx=target.x-bot.position.x,dz=target.z-bot.position.z;let wanted=Math.atan2(dx,-dz);const diff=Math.atan2(Math.sin(wanted-botYaw),Math.cos(wanted-botYaw));let steer=clamp(diff*2.1,-1,1);let distance=Math.hypot(dx,dz);let throttle=Math.abs(diff)>2.35?.3:1;
+// Bot repositions to strike through the ball toward the player's goal.
+if(distance<3.4){const aim=new THREE.Vector3(0,0,25).sub(ball.position);wanted=Math.atan2(aim.x,-aim.z);const strikeDiff=Math.atan2(Math.sin(wanted-botYaw),Math.cos(wanted-botYaw));steer=clamp(strikeDiff*1.8,-1,1);throttle=1}
+const useBoost=distance>8&&Math.abs(diff)<.6&&botBoost>5&&bot.position.z>-19;if(useBoost)botBoost=Math.max(0,botBoost-12*dt);else botBoost=Math.min(100,botBoost+8*dt);botYaw=moveCar(bot,velBot,botYaw,throttle,steer,useBoost,dt);const ud=bot.userData;ud.flame.visible=useBoost;ud.light.intensity=useBoost?2.7:0;botJump=Math.max(0,botJump+botVY*dt);botVY-=20*dt;if(botJump<0){botJump=0;botVY=0}bot.position.y=botJump;}
